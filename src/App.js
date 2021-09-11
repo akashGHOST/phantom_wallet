@@ -1,13 +1,21 @@
 import React, { useState } from "react";
 import "./App.css";
+// import {
+//   Connection,
+//   PublicKey,
+//   Transaction,
+//   clusterApiUrl,
+//   SystemProgram,
+// } from "@solana/web3.js";
+// import WalletPhantom from "./wallet.tsx";
+
 import {
   Connection,
-  PublicKey,
+  SystemProgram,
   Transaction,
   clusterApiUrl,
-  SystemProgram,
 } from "@solana/web3.js";
-// import WalletPhantom from "./wallet.tsx";
+import Wallet from "@project-serum/sol-wallet-adapter";
 
 var web3 = require("@solana/web3.js");
 var splToken = require("@solana/spl-token");
@@ -109,6 +117,7 @@ const walletPhantom = async () => {
   const isPhantomInstalled = window.solana && window.solana.isPhantom;
   if (isPhantomInstalled) {
     await window.solana.connect();
+
     if ("solana" in window) {
       const provider = window.solana;
       if (provider.isPhantom) {
@@ -181,6 +190,35 @@ const PhantomTransSign = async () => {
 };
 //
 
+
+// sollet wallet : working //
+const solletWallet = async () => {
+  let connection = new Connection(clusterApiUrl("testnet"));
+  let providerUrl = "https://www.sollet.io";
+  let wallet = new Wallet(providerUrl);
+  wallet.on("connect", (publicKey) =>
+    console.log("Connected to " + publicKey.toBase58())
+  );
+  wallet.on("disconnect", () => console.log("Disconnected"));
+  await wallet.connect();
+
+  let transaction = new Transaction().add(
+    SystemProgram.transfer({
+      fromPubkey: wallet.publicKey,
+      toPubkey: '42pSkNfUbggFne4vVuBrciAgnNMcP9rPo9EftmwFyd6E',
+      lamports: 100000000,
+    })
+  );
+  let { blockhash } = await connection.getRecentBlockhash();
+  transaction.recentBlockhash = blockhash;
+  transaction.feePayer = wallet.publicKey;
+  let signed = await wallet.signTransaction(transaction);
+  let txid = await connection.sendRawTransaction(signed.serialize());
+  await connection.confirmTransaction(txid);
+  console.log('txid', txid);
+  console.log('signed', signed);
+};
+
 function App() {
   return (
     <div className="App">
@@ -194,6 +232,8 @@ function App() {
       <button onClick={walletPhantom}>Phantom</button>
       <button onClick={transferPhatomMoney}>PhantomTransfer</button>
       <button onClick={PhantomTransSign}>newsifgn</button>
+      <h1>Sollet Wokring</h1>
+      <button onClick={solletWallet}>sollet</button>
     </div>
   );
 }
